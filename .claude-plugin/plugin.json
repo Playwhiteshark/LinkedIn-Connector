@@ -1,0 +1,9 @@
+{
+  "name": "linkedin-connector",
+  "description": "Deploy your own private LinkedIn MCP connector on Cloudflare Workers so Claude can publish and delete posts on your LinkedIn account through the official API, with explicit approval for every post.",
+  "version": "0.1.0",
+  "author": { "name": "Playwhiteshark" },
+  "repository": "https://github.com/Playwhiteshark/LinkedIn-Connector",
+  "license": "MIT",
+  "keywords": ["linkedin", "mcp", "cloudflare-workers", "oauth"]
+}

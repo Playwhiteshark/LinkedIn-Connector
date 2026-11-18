@@ -1,0 +1,14 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "linkedin-connector",
+  "description": "Deploy a private, owner-locked LinkedIn posting connector for Claude.",
+  "owner": { "name": "Playwhiteshark" },
+  "plugins": [
+    {
+      "name": "linkedin-connector",
+      "description": "Skill that walks Claude through deploying a private, owner-locked LinkedIn posting connector (Cloudflare Worker + official LinkedIn API).",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

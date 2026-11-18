@@ -1,15 +1,24 @@
 # LinkedIn Connector
 
-Private remote MCP server (Cloudflare Worker) that lets the owner's assistants (Claude, ChatGPT and other MCP clients) act on **the owner's own LinkedIn account** through LinkedIn's official API. It is not a bot account and does no scraping or automation outside LinkedIn's API terms.
+A remote MCP server (Cloudflare Worker) that lets your assistants (Claude, ChatGPT and other MCP clients) post to **your own LinkedIn account** through LinkedIn's official API. Claude drafts, you approve the exact text, then it publishes. Each deployment is locked to one LinkedIn member and uses only LinkedIn's self-serve products: no scraping, no unofficial endpoints, no bot account.
 
-- MCP endpoint: `https://linkedin-connector.playwhiteshark.workers.dev/mcp`
-- Health: `https://linkedin-connector.playwhiteshark.workers.dev/healthz`
+## Build your own
 
-## Current deployment
+Every deployment is personal: you run your own Worker with your own LinkedIn app, so nobody else holds your LinkedIn token. The repo ships a Claude Code skill that walks Claude through the whole setup (Cloudflare, the LinkedIn developer app, secrets, deploy and connecting Claude), including the gotchas found along the way.
+
+```text
+/plugin install linkedin-connector --marketplace Playwhiteshark/LinkedIn-Connector
+```
+
+Then ask Claude: *"Set up my own LinkedIn connector."* You sign in to each service and type the secrets yourself; Claude runs the rest. Prefer to do it by hand? Follow [Setup](#setup) below, or read the [skill](skills/deploy-linkedin-connector/SKILL.md) as a checklist.
+
+## The author's deployment
+
+For reference; your own values will differ (you must replace the KV id in `wrangler.jsonc`).
 
 | Item | Value |
 |---|---|
-| Worker | `linkedin-connector` on `playwhiteshark.workers.dev`, KV `OAUTH_KV` = `linkedin-connector-oauth-kv` |
+| Worker | `linkedin-connector` on `playwhiteshark.workers.dev` (MCP endpoint `/mcp`), KV `OAUTH_KV` = `linkedin-connector-oauth-kv` |
 | Secret names | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, `ALLOWED_LINKEDIN_EMAIL` |
 | LinkedIn developer app | "Playwhiteshark Post Connector" (app id 266766209), products Share on LinkedIn + Sign In with LinkedIn using OpenID Connect |
 | LinkedIn Page (app publisher) | "Playwhiteshark Tools" (`linkedin.com/company/146997329`), owner is the admin |
@@ -70,6 +79,8 @@ npx wrangler login
 npx wrangler kv namespace create OAUTH_KV   # put the returned id into wrangler.jsonc
 ```
 
+Replace the URLs below (`linkedin-connector.playwhiteshark.workers.dev`) with your own Worker's hostname throughout.
+
 ### 3. Secrets and deploy
 
 ```powershell
@@ -105,4 +116,8 @@ npm run build      # bundle dry-run
 
 ## Deployment path
 
-Manual `npm run deploy` from the owner's laptop. Record changes to Worker name, bindings or secret names in `personal-ops/configurations/cloudflare-account/README.md`.
+Manual `npm run deploy`. CI (GitHub Actions) runs audit, typecheck, tests and a bundle dry-run on every push; it never deploys.
+
+## Licence
+
+[MIT](LICENSE).
