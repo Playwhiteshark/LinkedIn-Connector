@@ -8,7 +8,7 @@
     {
       // OAuth grants/tokens (props encrypted by workers-oauth-provider) and short-lived login state.
       "binding": "OAUTH_KV",
-      "id": "REPLACE_WITH_KV_ID"
+      "id": "5986d5de7cbc4559aa30649945016778"
     }
   ],
   "secrets": {
