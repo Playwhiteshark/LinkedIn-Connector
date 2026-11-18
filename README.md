@@ -5,6 +5,15 @@ Private remote MCP server (Cloudflare Worker) that lets the owner's assistants (
 - MCP endpoint: `https://linkedin-connector.playwhiteshark.workers.dev/mcp`
 - Health: `https://linkedin-connector.playwhiteshark.workers.dev/healthz`
 
+## Current deployment
+
+| Item | Value |
+|---|---|
+| Worker | `linkedin-connector` on `playwhiteshark.workers.dev`, KV `OAUTH_KV` = `linkedin-connector-oauth-kv` |
+| Secret names | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, `ALLOWED_LINKEDIN_EMAIL` |
+| LinkedIn developer app | "Playwhiteshark Post Connector" (app id 266766209), products Share on LinkedIn + Sign In with LinkedIn using OpenID Connect |
+| LinkedIn Page (app publisher) | "Playwhiteshark Tools" (`linkedin.com/company/146997329`), owner is the admin |
+
 ## What it can do
 
 | Tool | Effect |
@@ -30,18 +39,25 @@ These are LinkedIn API constraints, not missing features:
 MCP client ──OAuth 2.1 + PKCE──▶ Worker (workers-oauth-provider, grants in KV)
                                    │  /authorize: consent page (bound to the browser by cookie)
                                    │  └─▶ LinkedIn OAuth (openid profile email w_member_social)
-                                   │  /callback: exchange code, check member == ALLOWED_LINKEDIN_SUB
+                                   │  /callback: exchange code, check member is the owner (see below)
                                    ▼
                                  /mcp tools ──▶ api.linkedin.com (/v2/userinfo, /rest/posts, /rest/images)
 ```
 
-The LinkedIn access token is stored only inside the encrypted grant props of `@cloudflare/workers-oauth-provider` in KV `OAUTH_KV`. Only the LinkedIn member whose OpenID `sub` equals the `ALLOWED_LINKEDIN_SUB` secret can complete a grant. Anyone else, including other LinkedIn users, is refused.
+The LinkedIn access token is stored only inside the encrypted grant props of `@cloudflare/workers-oauth-provider` in KV `OAUTH_KV`.
+
+**Owner lock.** Only one LinkedIn member can complete a grant:
+
+1. If the `ALLOWED_LINKEDIN_SUB` secret is set, only that OpenID `sub` is accepted.
+2. Otherwise, the first sign-in whose **verified** LinkedIn primary email equals the `ALLOWED_LINKEDIN_EMAIL` secret is accepted, and its `sub` is pinned in KV (`owner:sub`). From then on, only that member is accepted, even if someone else later controls that email address.
+
+Anyone else, including other LinkedIn users, is refused. To reset ownership, delete the `owner:sub` KV key.
 
 ## Setup
 
 ### 1. LinkedIn developer app (owner, one-time)
 
-1. <https://www.linkedin.com/developers/apps/new>. LinkedIn requires the app to be associated with a LinkedIn **Page**. Any Page you admin works, and the app still posts as *you*.
+1. <https://www.linkedin.com/developers/apps/new>. The app name may not contain "LinkedIn". LinkedIn requires the app to be associated with a LinkedIn **Page**. Any Page you admin works, and the app still posts as *you*.
 2. **Products** tab: add **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect** (both self-serve, approved instantly).
 3. **Auth** tab: add the redirect URL `https://linkedin-connector.playwhiteshark.workers.dev/callback` (and `http://localhost:8787/callback` for local dev).
 4. Keep the Client ID and Primary Client Secret for step 3. Never paste them into chat, Git or issues.
@@ -59,21 +75,21 @@ npx wrangler kv namespace create OAUTH_KV   # put the returned id into wrangler.
 ```powershell
 npx wrangler secret put LINKEDIN_CLIENT_ID
 npx wrangler secret put LINKEDIN_CLIENT_SECRET
-npx wrangler secret put ALLOWED_LINKEDIN_SUB   # see step 4 if you don't know it yet
+npx wrangler secret put ALLOWED_LINKEDIN_EMAIL   # your LinkedIn primary email (must be verified on LinkedIn)
 npm run deploy
 ```
 
-### 4. Find your member id (`ALLOWED_LINKEDIN_SUB`)
+Optionally set `ALLOWED_LINKEDIN_SUB` instead of the email lock. The refusal page shows your member id if neither is set.
 
-Set `ALLOWED_LINKEDIN_SUB` to any placeholder, deploy, and connect once (step 5). The refusal page shows your LinkedIn member id. Set the secret to that value (`npx wrangler secret put ALLOWED_LINKEDIN_SUB`) and connect again. Secret changes apply without a redeploy.
+### 4. Connect an assistant
 
-### 5. Connect an assistant
-
-- **Claude** (claude.ai / desktop): Settings → Connectors → Add custom connector → URL `https://linkedin-connector.playwhiteshark.workers.dev/mcp`.
+- **Claude** (claude.ai / desktop / mobile): Customize → Connectors → Add → Add custom connector → URL `https://linkedin-connector.playwhiteshark.workers.dev/mcp`. Either OAuth client option works (Claude's published identity/CIMD, or automatic registration/DCR).
 - **ChatGPT**: Settings → Apps & Connectors → developer mode → create connector with the same URL (OAuth).
 - **Claude Code**: `claude mcp add --transport http linkedin https://linkedin-connector.playwhiteshark.workers.dev/mcp`
 
 Sign in with LinkedIn when prompted, then ask the assistant to run `linkedin_whoami`.
+
+**Sign-in tip:** LinkedIn's OAuth sign-in page may show only email and password, with no Sign in with Apple or Google button. If you normally use Apple, either start the connection from a device where LinkedIn's page offers Apple, or set a LinkedIn password once with "Forgot password?". Apple sign-in keeps working afterwards.
 
 ## Development
 

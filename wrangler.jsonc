@@ -14,7 +14,7 @@
     }
   ],
   "secrets": {
-    "required": ["LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET", "ALLOWED_LINKEDIN_SUB"]
+    "required": ["LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET"]
   },
   "vars": {
     // LinkedIn REST API version (YYYYMM). Versions are supported for about a year; bump when LinkedIn sunsets it.

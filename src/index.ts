@@ -43,6 +43,8 @@ const provider = new OAuthProvider<Env>({
   tokenEndpoint: "/token",
   clientRegistrationEndpoint: "/register",
   scopesSupported: ["linkedin"],
+  // Lets Claude use its published client identity (CIMD) instead of dynamic registration.
+  clientIdMetadataDocumentEnabled: true,
   accessTokenTTL: 3600,
   // LinkedIn self-serve access tokens last 60 days and cannot be refreshed, so a longer grant is useless.
   refreshTokenTTL: 60 * DAY_SECONDS,

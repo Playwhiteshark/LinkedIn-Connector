@@ -1,6 +1,7 @@
 import { AuthorizationError, type AuthRequest, type OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 
 import { authorizationUrl, exchangeCode, getUserInfo, LinkedInError } from "./linkedin-api.ts";
+import { decideOwner, OWNER_PIN_KEY } from "./owner.ts";
 import { consentPage, escapeHtml, page } from "./pages.ts";
 
 /** Props stored (encrypted) with each MCP grant and exposed to tool calls. */
@@ -94,12 +95,23 @@ async function finishLinkedInLogin(request: Request, env: Env, url: URL): Promis
   try {
     const token = await exchangeCode(env, code, `${url.origin}/callback`);
     const me = await getUserInfo(token.accessToken);
-    if (!env.ALLOWED_LINKEDIN_SUB || me.sub !== env.ALLOWED_LINKEDIN_SUB) {
-      const hint = env.ALLOWED_LINKEDIN_SUB
-        ? "<p>This connector belongs to a different LinkedIn member.</p>"
-        : `<p>The connector owner isn't configured yet. If this is your connector, set the Worker secret <code>ALLOWED_LINKEDIN_SUB</code> to your LinkedIn member id:</p><p><code>${escapeHtml(me.sub)}</code></p>`;
+    const decision = decideOwner(
+      { sub: me.sub, email: me.email, emailVerified: me.email_verified },
+      {
+        allowedSub: env.ALLOWED_LINKEDIN_SUB,
+        pinnedSub: await env.OAUTH_KV.get(OWNER_PIN_KEY),
+        allowedEmail: env.ALLOWED_LINKEDIN_EMAIL,
+      },
+    );
+    if (!decision.allow) {
+      const hint = {
+        "not-owner": "<p>This connector belongs to a different LinkedIn member.</p>",
+        "email-unverified": "<p>Your LinkedIn primary email isn't verified. Verify it in LinkedIn settings and try again.</p>",
+        "not-configured": `<p>The connector owner isn't configured yet. If this is your connector, set the Worker secret <code>ALLOWED_LINKEDIN_EMAIL</code> (or <code>ALLOWED_LINKEDIN_SUB</code>) and try again. Your LinkedIn member id is:</p><p><code>${escapeHtml(me.sub)}</code></p>`,
+      }[decision.reason];
       return clearCookie(page("Not allowed", hint, 403));
     }
+    if (decision.pin) await env.OAUTH_KV.put(OWNER_PIN_KEY, me.sub);
     props = {
       sub: me.sub,
       name: me.name ?? [me.given_name, me.family_name].filter(Boolean).join(" "),

@@ -1,3 +1,5 @@
 LINKEDIN_CLIENT_ID=
 LINKEDIN_CLIENT_SECRET=
+# Owner lock: set one. Email is matched (verified only) on first sign-in, then the member id is pinned in KV.
+ALLOWED_LINKEDIN_EMAIL=
 ALLOWED_LINKEDIN_SUB=
