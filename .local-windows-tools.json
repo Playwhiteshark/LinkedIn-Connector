@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "name": "LinkedIn Connector",
+  "storage": {
+    "logs": { "status": "none", "paths": [] },
+    "cache": { "status": "none", "paths": [] },
+    "state": { "status": "none", "paths": [] },
+    "configuration": { "status": "declared", "paths": [ { "path": ".dev.vars", "cleanup": "never-automatic" } ] },
+    "artifacts": { "status": "none", "paths": [] },
+    "userData": { "status": "none", "paths": [] }
+  }
+}
